@@ -1,0 +1,53 @@
+import type { Project } from '../../types/project'
+
+export const SAMPLE_PROJECTS: Project[] = [
+  {
+    id: 1,
+    slug: 'blotz-task-app',
+    title: 'Blotz Task App',
+    projectType: 'FULL-STACK · 2025',
+    year: 2025,
+    description:
+      'A task management app pairing a .NET API and SQL Server backend with a React Native mobile experience.',
+    tags: ['C# / .NET', 'React Native', 'SQL Server', 'AI features'],
+    githubUrl: 'https://github.com/sol-wizard/Blotz-Task-App',
+    displayOrder: 1,
+    isFeatured: true,
+  },
+  {
+    id: 2,
+    slug: 'renopilot',
+    title: 'RenoPilot',
+    projectType: 'FULL-STACK · 2025',
+    year: 2025,
+    description: 'A renovation project management platform.',
+    tags: ['React', 'Node.js', 'PostgreSQL', 'TypeScript'],
+    githubUrl: 'https://github.com/sol-wizard/RenoPilot',
+    displayOrder: 2,
+    isFeatured: false,
+  },
+  {
+    id: 3,
+    slug: 'global-youth-sdgs-summit',
+    title: 'Global Youth SDGs Summit',
+    projectType: 'WEB · 2025',
+    year: 2025,
+    description: 'Official website for the Global Youth SDGs Summit.',
+    tags: ['React', 'TypeScript', 'Tailwind CSS'],
+    githubUrl: 'https://github.com/sol-wizard/global-youth-sdgs-summit',
+    displayOrder: 3,
+    isFeatured: false,
+  },
+  {
+    id: 4,
+    slug: 'ai-health-management',
+    title: 'AI Health Management',
+    projectType: 'AI · 2024',
+    year: 2024,
+    description: 'An AI-assisted health management system.',
+    tags: ['Python', 'FastAPI', 'OpenAI', 'PostgreSQL'],
+    githubUrl: 'https://github.com/sol-wizard/ai-health-management',
+    displayOrder: 4,
+    isFeatured: false,
+  },
+]

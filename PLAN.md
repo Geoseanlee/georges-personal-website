@@ -40,9 +40,10 @@ Cloudflare Pages              Mac mini (Gold Coast, QLD)
 |--------|--------------------------------------------|--------------------|
 | 前端   | React 18 + TypeScript + Vite               | Cloudflare Pages   |
 | 测试   | Vitest + React Testing Library + Playwright | 本地 CI            |
-| 后端   | ASP.NET Core 10 LTS Minimal API            | Mac mini（自托管） |
+| 后端   | FastAPI + Python 3.14                      | Mac mini（自托管） |
 | 数据库 | PostgreSQL 16                              | Mac mini（本地）   |
-| ORM    | EF Core + Npgsql                           | —                  |
+| ORM    | SQLAlchemy 2.0 async + asyncpg             | —                  |
+| 迁移   | Alembic                                    | —                  |
 | 隧道   | Cloudflare Tunnel (cloudflared)            | Cloudflare（免费） |
 | DNS    | Cloudflare DNS                             | Cloudflare（免费） |
 
@@ -63,26 +64,31 @@ PersonalWeb/                          ← 现有 Git 仓库根目录
 ├── .github/
 │   └── copilot-instructions.md       ← 迁移完成后更新为全栈结构说明
 ├── backend/
-│   ├── PersonalWeb.Api/
-│   │   ├── Data/
-│   │   │   ├── AppDbContext.cs
-│   │   │   ├── DesignTimeDbContextFactory.cs
-│   │   │   └── Migrations/           ← EF Core 迁移文件（Schema 权威来源）
-│   │   ├── Endpoints/
-│   │   │   ├── HealthEndpoints.cs
-│   │   │   └── ProjectEndpoints.cs
-│   │   ├── Models/
-│   │   │   └── Project.cs
-│   │   ├── Dtos/
-│   │   │   └── ProjectResponse.cs
-│   │   ├── Program.cs
-│   │   ├── appsettings.json
-│   │   └── PersonalWeb.Api.csproj
-│   └── PersonalWeb.Api.Tests/
-│       ├── ApiFactory.cs
-│       ├── HealthEndpointsTests.cs
-│       ├── ProjectEndpointsTests.cs
-│       └── PersonalWeb.Api.Tests.csproj
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py               ← FastAPI app + CORS + router 注册
+│   │   ├── config.py             ← pydantic-settings 读取环境变量
+│   │   ├── database.py           ← async engine + session factory
+│   │   ├── models.py             ← SQLAlchemy ORM Project 模型
+│   │   ├── schemas.py            ← Pydantic ProjectResponse（camelCase）
+│   │   └── routers/
+│   │       ├── __init__.py
+│   │       ├── health.py
+│   │       └── projects.py
+│   ├── alembic/
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions/
+│   │       └── 0001_initial_schema.py  ← Schema 权威来源
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_health.py
+│   │   └── test_projects.py
+│   ├── alembic.ini
+│   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   └── .env.example
 ├── db/
 │   └── seed.sql                      ← 幂等种子数据（4 个项目）
 ├── frontend/
@@ -187,7 +193,7 @@ CREATE TABLE projects (
 }
 ```
 
-**CORS：** 只允许配置中指定的精确 origin（`AllowedOrigins__0`、`AllowedOrigins__1`），不使用 `AllowAnyOrigin`。
+**CORS：** 只允许配置中指定的精确 origin（`ALLOWED_ORIGINS` 逗号分隔列表），不使用 `allow_all_origins`。
 
 ---
 
@@ -196,11 +202,8 @@ CREATE TABLE projects (
 ### API（Mac mini，不提交 Git）
 
 ```
-ConnectionStrings__DefaultConnection=Host=127.0.0.1;Port=5432;Database=personalweb;Username=personalweb_app;Password=<secret>
-ASPNETCORE_URLS=http://127.0.0.1:5050
-ASPNETCORE_ENVIRONMENT=Production
-AllowedOrigins__0=http://localhost:5173
-AllowedOrigins__1=https://<pages-project>.pages.dev
+DATABASE_URL=postgresql+asyncpg://personalweb_app:<secret>@127.0.0.1:5432/personalweb
+ALLOWED_ORIGINS=http://localhost:5173,https://<pages-project>.pages.dev
 ```
 
 ### 前端（Cloudflare Pages 环境变量）
@@ -276,20 +279,22 @@ VITE_API_BASE_URL=http://127.0.0.1:5050
 
 ### 阶段 2 — 后端 API
 
-**产出物：** `GET /api/v1/health` 和 `GET /api/v1/projects`；集成测试全部通过。
+**产出物：** `GET /api/v1/health` 和 `GET /api/v1/projects`；单元测试（mock DB）全部通过。
 
-- [ ] **先写测试**（`PersonalWeb.Api.Tests/`）：
+- [ ] 安装 Python 依赖：`pip install -r requirements.txt -r requirements-dev.txt`
+- [ ] **先写测试**（`backend/tests/`，使用 mock DB，无需本地 PostgreSQL）：
   - 有序 ProjectResponse 及 camelCase 字段
   - 空数据库返回 `200 []`
   - DB 不可用时 health 返回 `503`、projects 返回 `503`
   - 运行测试，确认**红**（路由尚未实现）
-- [ ] 实现 `GET /api/v1/health`：探测 DB 连接，返回 `200 ok` 或 `503 unavailable`
-- [ ] 实现 `GET /api/v1/projects`：只读 EF 查询，按 `display_order` 升序，投影为 `ProjectResponse`
-- [ ] 配置 CORS（精确 origin 从 `AllowedOrigins__*` 环境变量读取）
-- [ ] 绑定 API 监听地址为 `http://127.0.0.1:5050`
-- [ ] 运行测试，确认**全绿**：`dotnet test backend/PersonalWeb.Api.Tests/`
-- [ ] 本地 curl 验证：
+- [ ] 实现 `GET /api/v1/health`：探测 DB 连接（`SELECT 1`），返回 `200 ok` 或 `503 unavailable`
+- [ ] 实现 `GET /api/v1/projects`：只读 SQLAlchemy 查询，按 `display_order` 升序，序列化为 camelCase JSON
+- [ ] 配置 CORS（精确 origin 从 `ALLOWED_ORIGINS` 环境变量读取）
+- [ ] 绑定 API 监听地址为 `127.0.0.1:5050`
+- [ ] 运行测试，确认**全绿**：`cd backend && pytest`
+- [ ] 本地启动验证（需要 Mac mini 或本地 PG）：
   ```bash
+  uvicorn app.main:app --host 127.0.0.1 --port 5050
   curl -i http://127.0.0.1:5050/api/v1/health
   curl -i http://127.0.0.1:5050/api/v1/projects
   ```
@@ -324,15 +329,15 @@ VITE_API_BASE_URL=http://127.0.0.1:5050
 
 **产出物：** Mac mini 重启后 API 和 Tunnel 自动恢复；外部 curl 验证通过。
 
-- [ ] 以 Release 模式发布 API：`dotnet publish -c Release -o /opt/personalweb-api`
-- [ ] 创建权限受限的环境文件 `~/.config/personalweb/api.env`（`chmod 600`），存放连接字符串等 secret
-- [ ] 编写本地启动脚本（不提交 Git），通过 `EnvironmentFile` 加载 secret 后启动 API
+- [ ] 在 Mac mini 上安装依赖：`pip3 install -r backend/requirements.txt`
+- [ ] 创建权限受限的环境文件 `~/.config/personalweb/api.env`（`chmod 600`），存放 `DATABASE_URL` 等 secret
+- [ ] 编写本地启动脚本（不提交 Git）：`source ~/.config/personalweb/api.env && uvicorn app.main:app --host 127.0.0.1 --port 5050`
 - [ ] 停止 PostgreSQL 验证 health 返回 `503`，恢复后再次验证返回 `200`
 - [ ] 创建 Cloudflare Tunnel：`cloudflared tunnel create personalweb-api`
 - [ ] 编写 `~/.cloudflared/config.yml`，路由 `api.<domain>` → `http://127.0.0.1:5050`
 - [ ] Cloudflare DNS 添加 CNAME 记录（`api` → Tunnel ID）
 - [ ] 外部验证：`curl https://api.<domain>/api/v1/health`
-- [ ] 创建 launchd LaunchAgent（开机自启 + 崩溃重启）：
+- [ ] 创建 launchd LaunchAgent（开机自启 + 崩溃重启），使用 uvicorn 启动 FastAPI：
   - `~/Library/LaunchAgents/com.georgelee.personalweb-api.plist`
   - `~/Library/LaunchAgents/com.georgelee.cloudflared.plist`
 - [ ] **重启 Mac mini**，验证两个服务自动恢复
@@ -374,11 +379,12 @@ npm run test
 npm run test:e2e
 npm run build
 
-# 后端（从仓库根目录）
-dotnet test backend/PersonalWeb.Api.Tests/PersonalWeb.Api.Tests.csproj
-dotnet build backend/PersonalWeb.Api/PersonalWeb.Api.csproj
+# 后端（从 backend/ 目录）
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
 
-# 运行时检查
+# 运行时检查（需要 PostgreSQL 运行中）
+uvicorn app.main:app --host 127.0.0.1 --port 5050
 curl -i http://127.0.0.1:5050/api/v1/health
 curl -i http://127.0.0.1:5050/api/v1/projects
 ```
