@@ -1,8 +1,8 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import make_url
 
 # Alembic Config object
 config = context.config
@@ -11,17 +11,25 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import the metadata from our models so Alembic can detect changes
-from app.models import Base  # noqa: E402
-from app.database import Base  # noqa: E402, F811
+# Import the models so Alembic can detect their metadata.
+from app.models import Project  # noqa: E402, F401
+from app.database import Base  # noqa: E402
+from app.config import settings  # noqa: E402
 
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from environment variable
-database_url = os.environ.get("DATABASE_URL", "")
-# Alembic needs a sync URL; convert asyncpg → psycopg2 for migrations
-sync_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
-config.set_main_option("sqlalchemy.url", sync_url)
+# The API uses asyncpg; Alembic's synchronous migration engine uses psycopg.
+sync_url = make_url(settings.database_url).set(drivername="postgresql+psycopg")
+query = dict(sync_url.query)
+ssl_mode = query.pop("ssl", None)
+if ssl_mode:
+    query["sslmode"] = ssl_mode
+sync_url = sync_url.set(query=query)
+# Escape percent signs because ConfigParser interpolates Alembic options.
+config.set_main_option(
+    "sqlalchemy.url",
+    sync_url.render_as_string(hide_password=False).replace("%", "%%"),
+)
 
 
 def run_migrations_offline() -> None:

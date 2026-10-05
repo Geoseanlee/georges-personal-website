@@ -12,17 +12,12 @@ interface UseProjectsResult {
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined
 
 export function useProjects(): UseProjectsResult {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState<Project[]>(API_BASE ? [] : SAMPLE_PROJECTS)
+  const [loading, setLoading] = useState(Boolean(API_BASE))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // No API configured — use static fixture data for local dev / preview
-    if (!API_BASE) {
-      setProjects(SAMPLE_PROJECTS)
-      setLoading(false)
-      return
-    }
+    if (!API_BASE) return
 
     const controller = new AbortController()
 
