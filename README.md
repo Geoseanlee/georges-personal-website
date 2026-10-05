@@ -2,6 +2,8 @@
 
 George Li's responsive one-page personal website. The React frontend and FastAPI API run locally, with project data stored in a local PostgreSQL 16 database. The frontend also includes sample project data for a quick UI-only preview.
 
+The production site is self-hosted on a Mac mini behind a named Cloudflare Tunnel. See [SERVER_DEPLOYMENT.md](SERVER_DEPLOYMENT.md) for service management, database migrations, and safe production updates.
+
 ## Requirements
 
 - macOS
@@ -52,7 +54,7 @@ fi
 psql -d postgres -v ON_ERROR_STOP=1 -c 'ALTER DATABASE personalweb OWNER TO personalweb_app'
 ```
 
-This config uses the local PostgreSQL trust authentication created by Homebrew on this Mac. PostgreSQL listens on the local machine; do not expose port 5432 to the internet.
+Homebrew's initial local PostgreSQL setup may use trust authentication. The production Mac mini uses SCRAM password authentication for TCP connections; its application password is stored only in the ignored `backend/.env`. PostgreSQL listens on loopback; do not expose port 5432 to the internet.
 
 ## First-time setup: Python API and database schema
 
@@ -86,7 +88,6 @@ API endpoints:
 
 - Health: <http://127.0.0.1:5050/api/v1/health>
 - Projects: <http://127.0.0.1:5050/api/v1/projects>
-- Interactive docs: <http://127.0.0.1:5050/docs>
 
 The health endpoint should return `{"status":"ok"}`; the projects endpoint should return four records.
 
@@ -141,9 +142,12 @@ python -m pytest
 | Browser console reports CORS | Set `ALLOWED_ORIGINS=http://localhost:5173` in `backend/.env` and restart Uvicorn. |
 | Alembic cannot find the driver | Activate `backend/.venv` and install `requirements.txt` plus `requirements-dev.txt`. |
 
+## Production deployment
+
+See [SERVER_DEPLOYMENT.md](SERVER_DEPLOYMENT.md) for the Mac mini LaunchAgents, Cloudflare Tunnel, HTTPS domains, deployment/update commands, and troubleshooting.
+
 ## Project boundaries
 
 - The API only reads projects and checks database health; it has no login, admin UI, or write routes.
 - The database URL stays on the backend and is never exposed to the browser.
 - The bio, journey, and contact sections remain available if PostgreSQL or the API is unavailable.
-- Public hosting and Cloudflare Tunnel are follow-up deployment work; this guide covers the local MVP.
