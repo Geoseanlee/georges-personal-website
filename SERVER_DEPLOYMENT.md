@@ -51,6 +51,7 @@ Mac mini 的 API 和 PostgreSQL 继续留在本机。Tunnel 只主动向 Cloudfl
 - **前端：**Cloudflare Pages 与 GitHub 仓库连接完成后，每次 push 到 `main` 都会自动构建并发布；Pages Build history 可查看结果。目前还需要完成本节开头的 Dashboard 授权、Pages 项目与域名切换。
 - **Mac mini：**启用 `com.geoseanlee.personalweb-git-sync` 后，LaunchAgent 每 5 分钟执行 `scripts/deploy-macmini.sh` 检查 `origin/main`。有新提交时检查工作区、快进同步，再按改动运行前端检查/构建或后端测试/重启 API。
 - 自动更新只接受 `main` 快进提交；遇到本机未提交改动、分支分叉、数据库 migration 或后端依赖清单变化时会停止并写日志，等待人工处理。**数据库 migration 不会自动执行。**
+- 处理 migration/依赖变更时，先审查提交、备份数据库，再手动快进同步、安装后端依赖并运行 `cd backend && .venv/bin/alembic upgrade head`。确认完成后，在仓库根目录运行 `scripts/deploy-macmini.sh --accept-reviewed-changes`；它会再次测试、构建/重启相应服务并健康检查，成功后才更新部署状态。
 - 自动同步启动后，Mac mini 通常在 push 后 5 分钟内更新；Cloudflare Pages 在 GitHub push 后启动构建，完成时间以 Pages Build history 为准。Mac mini 离线时会在重新登录/联网后继续检查。
 
 检查同步 agent 与日志：

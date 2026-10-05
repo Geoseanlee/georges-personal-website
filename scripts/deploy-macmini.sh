@@ -6,6 +6,14 @@ STATE_DIR="/Users/geoseanlee/Library/Application Support/PersonalWeb"
 STATE_FILE="$STATE_DIR/last-deployed-commit"
 LOCK_DIR="/Users/geoseanlee/Library/Caches/personalweb-git-sync.lock"
 LOG_FILE="/Users/geoseanlee/Library/Logs/personalweb-git-sync.log"
+ACCEPT_REVIEWED_CHANGES=0
+
+if [[ "${1:-}" == "--accept-reviewed-changes" ]]; then
+  ACCEPT_REVIEWED_CHANGES=1
+elif [[ $# -gt 0 ]]; then
+  printf 'Usage: %s [--accept-reviewed-changes]\n' "$0" >&2
+  exit 2
+fi
 
 log() {
   printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" >> "$LOG_FILE"
@@ -64,8 +72,15 @@ fi
 
 CHANGED_FILES="$(git diff --name-only "$DEPLOYED_SHA" "$TARGET_SHA")"
 if grep -Eq '^backend/(alembic/|requirements(-dev)?\.txt$)' <<< "$CHANGED_FILES"; then
-  log "Database migrations or backend dependencies changed; review and apply them manually before deploying."
-  exit 1
+  if (( ! ACCEPT_REVIEWED_CHANGES )); then
+    log "Database migrations or backend dependencies changed; review and apply them manually before deploying."
+    exit 1
+  fi
+  if [[ "$CURRENT_SHA" != "$TARGET_SHA" ]]; then
+    log "Reviewed migration/dependency changes require main at origin/main before confirmation."
+    exit 1
+  fi
+  log "Proceeding with reviewed migration/dependency changes; verify manual migration and dependency steps are complete."
 fi
 
 if [[ "$CURRENT_SHA" != "$TARGET_SHA" ]]; then
