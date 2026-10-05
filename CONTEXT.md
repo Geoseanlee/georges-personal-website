@@ -17,9 +17,10 @@
 - PostgreSQL 16：本機開發使用 Homebrew PostgreSQL 服務。資料庫連線字串僅放在 `backend/.env`，不可傳到瀏覽器。
 - `backend/alembic/`：資料庫 migration；`db/seed.sql`：四筆公開作品資料。
 - 未設定前端 API URL 時，專案作品由 `frontend/src/test/fixtures/projects.ts` 提供；設定 `VITE_API_BASE_URL` 後透過本機 API 讀取資料。
-- 正式網站由 Mac mini 自架：Cloudflare DNS + 命名 Cloudflare Tunnel 對外提供 HTTPS；根域名服務前端靜態建置，`api.` 子域名服務 FastAPI。
+- 目前正式網站/API 由 Mac mini 自架，Cloudflare DNS + 命名 Cloudflare Tunnel 對外提供 HTTPS；根域名靜態網站與 `api.` FastAPI 都經 Tunnel 路由。
 - PostgreSQL 16、FastAPI、靜態檔案伺服器及 Cloudflare Tunnel 分別在 Mac mini 上執行；資料庫和兩個來源服務只綁定 loopback，只有 Tunnel 建立出站連線。
-- Mac mini 的正式部署及更新流程見 `SERVER_DEPLOYMENT.md`。Cloudflare Pages 和舊 Quick Tunnel 不再是目前正式架構。
+- 已選擇將靜態前端遷移至 Cloudflare Pages，讓 GitHub `main` push 自動部署；Pages 專案建立與根域名切換尚待 Cloudflare Dashboard 完成。`api.` 子域名與 PostgreSQL 繼續在 Mac mini。
+- Mac mini 自動同步腳本與完整部署/更新流程見 `SERVER_DEPLOYMENT.md`。
 
 ## 設計與互動慣例
 
@@ -43,6 +44,7 @@
 - `~/Library/LaunchAgents/com.geoseanlee.personalweb-api.plist`：FastAPI，`127.0.0.1:5050`
 - `~/Library/LaunchAgents/com.geoseanlee.personalweb-site.plist`：`frontend/dist` 靜態檔案，`127.0.0.1:4173`
 - `~/Library/LaunchAgents/com.geoseanlee.personalweb-tunnel.plist`：命名 Cloudflare Tunnel；`~/.cloudflared/config.yml` 將 API 和網站 hostname 路由至上述 loopback 服務。
+- `scripts/deploy-macmini.sh` + `com.geoseanlee.personalweb-git-sync` LaunchAgent：每 5 分鐘安全檢查 GitHub `main`，前端驗證/建置或後端測試/重啟；資料庫 migration 與依賴變更需人工處理。
 - PostgreSQL 16 經 Homebrew 服務啟動，只監聽 `127.0.0.1` 和 `::1`。不要建立 PostgreSQL 公網 DNS 路由或 Tunnel ingress。
 - API 的 Swagger `/docs` 與 ReDoc 已停用；資料庫 URL 和 Cloudflare Tunnel 憑據不可提交 Git，也不可寫入前端環境變數。
 - macOS 公共 DNS 傳播可能不一致；遇到根域名無法解析時，先用 `8.8.8.8`、`8.8.4.4` 查 DNS，並確認 API hostname、Tunnel 與來源服務，不要因為 DNS 暫存而重建隧道。
