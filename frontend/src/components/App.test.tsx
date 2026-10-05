@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
 // Stub the hook so we never need a real API in unit tests
@@ -23,5 +23,20 @@ describe('App smoke test', () => {
   it('renders nav links', () => {
     render(<App />)
     expect(screen.getAllByRole('link', { name: /about/i }).length).toBeGreaterThan(0)
+  })
+
+  it('shows the profile and landscape photos in their respective locations', () => {
+    render(<App />)
+    expect(screen.getByRole('link', { name: 'George Li, home' }).querySelector('img'))
+      .toHaveAttribute('src', '/images/profile-photo.jpg?v=2')
+    expect(screen.getByRole('img', { name: 'George Li sitting by a cafe window' }))
+      .toHaveAttribute('src', '/images/hero-photo.jpg?v=2')
+  })
+
+  it('shows a dark placeholder when the hero photo fails to load', () => {
+    render(<App />)
+    fireEvent.error(screen.getByRole('img', { name: 'George Li sitting by a cafe window' }))
+    expect(screen.getByRole('img', { name: 'George Li portrait unavailable' }))
+      .toHaveClass('hero-portrait-placeholder')
   })
 })

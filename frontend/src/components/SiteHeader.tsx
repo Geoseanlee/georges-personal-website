@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [profilePhotoFailed, setProfilePhotoFailed] = useState(false)
   const navRef = useRef<HTMLElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
 
@@ -28,8 +29,18 @@ export default function SiteHeader() {
 
   return (
     <header className={`site-header${scrolled ? ' scrolled' : ''}`}>
-      <a href="#home" className="wordmark" aria-label="George Li, home">
-        GL<em>.</em>
+      <a href="#home" className="profile-avatar" aria-label="George Li, home">
+        <span className="profile-avatar-frame">
+          {profilePhotoFailed ? (
+            <span aria-hidden="true">GL</span>
+          ) : (
+            <img
+              src="/images/profile-photo.jpg?v=2"
+              alt=""
+              onError={() => setProfilePhotoFailed(true)}
+            />
+          )}
+        </span>
       </a>
 
       <button
