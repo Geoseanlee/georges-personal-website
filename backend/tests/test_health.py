@@ -69,3 +69,9 @@ async def test_health_does_not_expose_connection_details(client):
     assert "127.0.0.1" not in body
     assert "secret" not in body
     assert "password" not in body.lower()
+
+
+async def test_api_docs_are_not_public(client):
+    response = await client.get("/docs")
+
+    assert response.status_code == 404

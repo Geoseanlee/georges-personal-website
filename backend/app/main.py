@@ -7,7 +7,7 @@ from .routers import health, projects
 app = FastAPI(
     title="PersonalWeb API",
     version="1.0.0",
-    docs_url="/docs",       # disable in prod by setting to None
+    docs_url=None,
     redoc_url=None,
 )
 
