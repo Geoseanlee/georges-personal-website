@@ -2,67 +2,47 @@
 
 ## Project overview
 
-This repository is a lightweight personal website for George Li, built as a static single-page site rather than a framework-based app. The project is intentionally simple: HTML defines the content, CSS controls the visual design, and a small script handles mobile navigation and small UI behaviors.
+This is a single-page personal portfolio for George Li. The frontend is React + TypeScript + Vite; the API is FastAPI; project-card data is stored in PostgreSQL 16. In the local MVP, all three run on the developer's Mac; PostgreSQL is installed as a native Homebrew service.
 
-The site is meant to feel personal and polished, not generic. Keep changes aligned with the project’s tone: warm editorial branding, calm green/neutral palette, responsive one-page layout, and a founder-style “code & care” identity.
+## Architecture and boundaries
 
-## Build, test, and lint commands
+- `frontend/src/components/` contains the page sections and project card; `frontend/src/hooks/useProjects.ts` retrieves public projects; `frontend/src/data/projectsApi.ts` owns the API request.
+- `backend/app/` contains FastAPI configuration, SQLAlchemy models/database setup, Pydantic response schemas, and the health/projects routes. `backend/alembic/` owns schema migrations; `db/seed.sql` loads the four public portfolio records.
+- The public API is read-only: `GET /api/v1/health` and `GET /api/v1/projects`. Keep the bio, journey, and contact content usable if the API is unavailable.
+- The database URL belongs in ignored `backend/.env`; never expose it through a `VITE_*` variable or browser code. `backend/.env.example` documents the local connection URL.
+- Keep the API bound to loopback for local development. Do not expose PostgreSQL or add public write endpoints, login, admin UI, GraphQL, or a contact form unless explicitly requested.
 
-There is no package.json, build pipeline, test runner, or lint configuration in this repository.
+## Commands
 
-Recommended local preview:
-
-```bash
-cd /Users/geoseanlee/Documents/Code/PersonalWeb
-python3 -m http.server 8000
-```
-
-Then open: http://localhost:8000
-
-Manual validation for changes:
-
-- Check the page in a browser for layout and interaction issues.
-- Confirm navigation links and section anchors still work.
-- If editing JavaScript, validate syntax with the browser console or a quick Node check:
+Run frontend commands from `frontend/`:
 
 ```bash
-node --check script.js
+npm ci
+npm run dev
+npm test
+npm run lint
+npm run build
+npm run test:e2e
 ```
 
-There are no automated unit tests or lint commands to run in this repo.
+Run backend commands from `backend/` with `.venv` active:
 
-## High-level architecture
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt -r requirements-dev.txt
+alembic upgrade head
+uvicorn app.main:app --reload --host 127.0.0.1 --port 5050
+python -m pytest
+```
 
-The repo is intentionally small and follows a straightforward static-site structure:
+See `README.md` for Homebrew PostgreSQL setup, schema seeding, two-terminal startup, and troubleshooting.
 
-- `index.html`: the full page content, sections, metadata, and all anchor links. This file includes the site structure and content blocks for hero, about, selected work, journey, and contact sections.
-- `styles.css`: all styling, design tokens, responsive layout rules, hover/focus states, and page-specific visual treatments. This is the main place for visual changes.
-- `script.js`: small DOM behavior for the mobile navigation menu, Escape-key handling, and the footer year.
+## Project-specific conventions
 
-Important project-specific context from the repo:
-
-- The site is a single-page personal website, not an app with routing or a client-side framework.
-- The HTML/CSS/JS are all at the root of the project and are served directly.
-- Links to social profiles and GitHub repositories should remain as external links opening in a new tab with `target="_blank"` and `rel="noopener noreferrer"`.
-- The project is intentionally static and dependency-free; avoid introducing a framework or bundler unless the task explicitly requires it.
-
-## Key conventions and patterns
-
-- Preserve the existing document structure and section IDs. Navigation links such as `#about`, `#work`, and `#journey` depend on matching IDs in `index.html`.
-- Keep the visual language consistent with the warm paper-inspired palette and serif/sans typography already defined in `styles.css`.
-- Prefer semantic HTML and accessible interactions. The site already includes skip-link, focus-visible styling, and `aria-expanded` handling for the mobile menu.
-- Treat the project as a personal brand page, not an enterprise app. Copy should stay polished and conversational, with a biography and portfolio emphasis rather than technical boilerplate.
-- Avoid unnecessary dependencies or build tooling. If a change can be implemented with plain HTML/CSS/JS, that is the preferred path.
-- When editing the menu or other JS-driven UI, keep behavior simple and accessible: close the menu when links are clicked, support Escape to dismiss, and maintain keyboard focus behavior.
-
-## Working rules for future edits
-
-- Keep content updates in `index.html` when changing text, section order, or links.
-- Keep styling changes in `styles.css` for colors, spacing, typography, and responsive layout.
-- Keep behavior changes in `script.js` for interactions only; avoid scattering event logic across HTML.
-- Use relative file paths as they currently exist. The app is served from the project root, so `styles.css` and `script.js` are referenced directly from `index.html`.
-- Do not add framework scaffolding, package managers, or build steps unless a task specifically requires them for a feature.
-
-## Repository context
-
-This project lives in a small static directory and is expected to be hand-served locally. The project history notes that it was originally created as a personal website in a separate folder and later moved into this repository directory; the current structure should remain stable and self-contained.
+- Preserve the one-page content arc and section anchors: `home`, `about`, `work`, `journey`, and `contact`.
+- Retain the established dark-purple visual direction, Manrope typography, responsive breakpoints, focus states, reduced-motion support, and WCAG AA contrast requirements.
+- Social and GitHub links are external; use `target="_blank"` with `rel="noopener noreferrer"`.
+- Keep the API response in camelCase to match the frontend `Project` type; order project records by `display_order`.
+- Empty project data is a successful empty list; connection/API errors must remain distinct and must not be silently treated as empty data.
+- Keep frontend and backend dependencies in their respective manifests. Avoid adding frameworks or services beyond the existing MVP architecture.

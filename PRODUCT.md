@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-React 18 + TypeScript + Vite; FastAPI backend (Mac mini self-hosted, reached through Cloudflare Tunnel); PostgreSQL 16. Frontend deployed to Cloudflare Pages.
+React 19 + TypeScript + Vite; FastAPI backend; PostgreSQL 16 running locally as a native Homebrew service. Mac mini + Cloudflare Tunnel and Cloudflare Pages are future deployment options, not required for the local MVP.
 
 ## Users
 

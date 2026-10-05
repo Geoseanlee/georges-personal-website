@@ -1,41 +1,31 @@
-# PersonalWeb 项目上下文
+# PersonalWeb 專案脈絡
 
-## 项目目的
+## 專案目的與內容
 
-这是 George Li 的个人网站项目，与简历资料仓库 `CV_Editing` 分开存放。网站作为个人介绍、精选作品集和联系入口，采用轻量静态网页，不依赖框架或构建工具。
+這是 George Li 的個人網站，與履歷資料庫 `CV_Editing` 分開。網站以英文介紹 George 在護理、軟體與個人經歷之間的連結，提供作品集、教育／工作經歷、社群連結與電子郵件聯絡方式。
 
-## 本次需求与资料
+- 個人定位：「A life between code & care.」
+- 中文名：子璽；溫州背景，曾在台灣生活，目前居住於澳洲黃金海岸。
+- 教育與工作經歷來自 LinkedIn／履歷，包含護理碩士、電腦科學碩士、經濟學學士、Mable 支援工作及 Touch of Pawfection 寵物美容。
+- 精選專案：Blotz Task App、RenoPilot、Global Youth SDGs Summit、AI Health Management。
+- 聯絡方式：`geoseanlee@gmail.com`；不公開住址、電話或推薦人聯絡資料。
 
-- 用户希望根据自己的简历制作个人网站，并参考其 Instagram 和 LinkedIn 资料。
-- Instagram：<https://www.instagram.com/geoseanlee/?hl=en>
-- LinkedIn：<https://www.linkedin.com/in/george-li-o4a0eo49b9/>
-- Instagram 提供的简介要点：George Li；温州背景；个人简介中含中文名「子璽」、台湾与澳洲经历，以及信仰相关文字。
-- LinkedIn 所提供的资料要点：目前在 Gold Coast；攻读 Southern Cross University 护理硕士（2026–2028）；University of Sydney 计算机科学硕士（Distinction，2024–2025）；Soochow University 经济学学士（High Distinction，2019–2023）；近期经历包括 Mable 支持工作和 Touch of Pawfection 宠物美容。
-- 仓库简历文件覆盖科技、医疗支持、餐饮零售等不同岗位，也提供多个软件和数字健康项目。网站采用更适合个人主页的综合叙述，而非照搬某一个求职版本。
-- 个人联络邮箱取自简历：`geoseanlee@gmail.com`。
+## 技術架構
 
-## 已完成内容
+- `frontend/`：React 19、TypeScript、Vite 單頁前端。內容以元件組成，保留 `home`、`about`、`work`、`journey`、`contact` 頁內錨點。
+- `backend/`：FastAPI、SQLAlchemy async、Pydantic；提供只讀 `GET /api/v1/projects` 和資料庫健康檢查 `GET /api/v1/health`。
+- PostgreSQL 16：本機開發使用 Homebrew PostgreSQL 服務。資料庫連線字串僅放在 `backend/.env`，不可傳到瀏覽器。
+- `backend/alembic/`：資料庫 migration；`db/seed.sql`：四筆公開作品資料。
+- 未設定前端 API URL 時，專案作品由 `frontend/src/test/fixtures/projects.ts` 提供；設定 `VITE_API_BASE_URL` 後透過本機 API 讀取資料。
+- 本機開發階段前端與 API 都在開發者電腦運行。Mac mini + Cloudflare Tunnel 與 Cloudflare Pages 是之後可選的部署方案。
 
-- `index.html`：英文单页个人网站，含个人介绍、精选项目、教育与经历时间线、社交链接和邮件联系入口。
-- `styles.css`：暖色纸张与橄榄绿视觉风格、项目图形、响应式布局、键盘焦点样式和减少动态效果偏好支持。
-- `script.js`：手机导航菜单交互、Escape 关闭菜单、自动更新页脚年份。
-- 页面突出“code & care”的跨领域个人定位；精选项目包括 Blotz Task App、RenoPilot、Global Youth SDGs Summit 和 AI Health Management System。
-- LinkedIn、Instagram、GitHub 均以新标签页外链方式打开；项目卡片链接至相应 GitHub 仓库。
-- 出于隐私考虑，页面未公开简历中的家庭住址、电话号码或推荐人联系方式。
-- 三个网站文件最初误放在 `CV_Editing` 根目录，之后依用户要求移至同级 `PersonalWeb` 目录；今后对网站的改动应仅在本项目进行。
+## 設計與互動慣例
 
-## 运行与验证
+- 保留深紫與白色的視覺方向、Manrope 字體與 Apple-register 精準感。
+- 支援手機、平板與桌面；使用語意化 HTML、跳至內容連結、可見鍵盤焦點、`aria-expanded` 行動導覽和減少動態效果設定。
+- 頁面主要區塊在 API 或資料庫不可用時仍可使用；作品 API 錯誤不可偽裝成空清單。
+- LinkedIn、Instagram、GitHub 外連使用新分頁及 `rel="noopener noreferrer"`。
 
-在 `PersonalWeb` 目录使用 Python 内置静态服务器预览：
+## 本機啟動
 
-```sh
-python3 -m http.server 8000
-```
-
-然后打开 <http://localhost:8000>。网站不需要安装依赖或构建步骤。
-
-初版完成时已验证 JavaScript 语法、HTML 唯一 ID 与页内链接、响应式样式存在，并用本地 HTTP 服务器确认 HTML、CSS 和 JavaScript 均可成功提供。移动到新目录后，页面引用的 CSS/JS 仍与 HTML 同目录，路径无须调整。
-
-## 对话结果摘要
-
-用户先要求参考个人简历、Instagram 与 LinkedIn 创建个人网站。根据资料制作了暖色系、响应式单页网站，并确认本地静态服务器可预览。用户随后说明应创建独立网站项目，请求在 `/Users/geoseanlee/Documents/Code` 下新建 `PersonalWeb` 并将网站文件和本次对话结果收录于本文档。现网站文件已移至该目录；本文档记录项目背景、资料、实现和预览方式。
+請依根目錄 `README.md` 操作。只預覽前端不需要資料庫；完整前後端需先啟動本機 PostgreSQL、設定 `backend/.env`、執行 Alembic migration 並載入 `db/seed.sql`，然後分別啟動 FastAPI 和 Vite。

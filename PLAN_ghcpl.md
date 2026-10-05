@@ -1,5 +1,7 @@
 # Personal Website Full-Stack Implementation Plan
 
+> **Status:** The repository's working MVP now uses the existing FastAPI backend with PostgreSQL 16 running locally through Homebrew. This plan records an earlier .NET/Mac mini/Tunnel target and is not the runbook for the current local setup; follow `README.md` for the implemented stack.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Migrate the existing personal website into a responsive React frontend backed by a small read-only ASP.NET Core API and PostgreSQL database hosted on the always-on Mac mini.
