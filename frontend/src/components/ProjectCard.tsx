@@ -1,4 +1,6 @@
 import type { Project } from '../types/project'
+import { localizeProject } from '../i18n/translations'
+import { useLocale } from '../i18n/useLocale'
 
 interface Props {
   project: Project
@@ -12,16 +14,13 @@ const visualClass: Record<string, string> = {
   'ai-health-management':     'visual-ai',
 }
 
-const visualLabel: Record<string, string> = {
-  'blotz-task-app':           'Product & Mobile',
-  'renopilot':                'Web Platform',
-  'global-youth-sdgs-summit': 'Community & Content',
-  'ai-health-management':     'Digital Health',
-}
-
 export default function ProjectCard({ project, index }: Props) {
+  const { locale, messages } = useLocale()
+  const displayProject = localizeProject(project, locale)
   const vClass = visualClass[project.slug] ?? 'visual-ai'
-  const vLabel = visualLabel[project.slug] ?? ''
+  const vLabel = messages.work.visualLabels[
+    project.slug as keyof typeof messages.work.visualLabels
+  ] ?? ''
   const num    = String(index + 1).padStart(2, '0')
 
   return (
@@ -43,12 +42,12 @@ export default function ProjectCard({ project, index }: Props) {
       </div>
 
       <div className="project-info">
-        <p className="project-type">{project.projectType}</p>
-        <h3>{project.title}</h3>
-        <p className="project-desc">{project.description}</p>
+        <p className="project-type">{displayProject.projectType}</p>
+        <h3>{displayProject.title}</h3>
+        <p className="project-desc">{displayProject.description}</p>
         <div className="project-footer">
-          <div className="tag-list" aria-label="Technologies">
-            {project.tags.map((tag) => (
+          <div className="tag-list" aria-label={messages.common.technologies}>
+            {displayProject.tags.map((tag) => (
               <span className="tag" key={tag}>{tag}</span>
             ))}
           </div>
@@ -57,7 +56,7 @@ export default function ProjectCard({ project, index }: Props) {
             href={project.githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`View ${project.title} on GitHub`}
+            aria-label={messages.common.viewProject.replace('{title}', displayProject.title)}
           >
             ↗
           </a>

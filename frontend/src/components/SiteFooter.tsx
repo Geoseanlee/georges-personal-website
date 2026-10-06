@@ -1,13 +1,17 @@
+import { useLocale } from '../i18n/useLocale'
+
 const CURRENT_YEAR = new Date().getFullYear()
 
 export default function SiteFooter() {
+  const { messages } = useLocale()
+
   return (
     <footer className="site-footer wrap">
-      <a className="wordmark" href="#home" aria-label="Back to top">
+      <a className="wordmark" href="#home" aria-label={messages.common.backToTop}>
         GL<em>.</em>
       </a>
-      <p>Made with care, on the lands of the Yugambeh people.</p>
-      <p>© {CURRENT_YEAR} George Li</p>
+      <p>{messages.footer.madeWithCare}</p>
+      <p>{messages.footer.copyright.replace('{year}', String(CURRENT_YEAR))}</p>
     </footer>
   )
 }

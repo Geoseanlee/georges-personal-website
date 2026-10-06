@@ -6,13 +6,16 @@ import JourneySection from './components/JourneySection'
 import ContactSection from './components/ContactSection'
 import SiteFooter from './components/SiteFooter'
 import { useProjects } from './hooks/useProjects'
+import { LocaleProvider } from './i18n/LocaleProvider'
+import { useLocale } from './i18n/useLocale'
 
-export default function App() {
+function PortfolioPage() {
   const { projects, loading, error } = useProjects()
+  const { messages } = useLocale()
 
   return (
     <>
-      <a className="skip-link" href="#main">Skip to content</a>
+      <a className="skip-link" href="#main">{messages.common.skipLink}</a>
       <SiteHeader />
       <main id="main">
         <HeroSection />
@@ -23,5 +26,13 @@ export default function App() {
       </main>
       <SiteFooter />
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <LocaleProvider>
+      <PortfolioPage />
+    </LocaleProvider>
   )
 }

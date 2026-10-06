@@ -17,6 +17,35 @@ test('page content fits phone, tablet, and desktop widths', async ({ page }) => 
   }
 })
 
+test('language selector switches and remembers all three page locales', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '简体' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-Hans')
+  await expect(page.getByRole('heading', { name: '完成高中十二年级' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Blotz 任务应用' })).toBeVisible()
+  await expect(page).toHaveTitle(/科技/)
+
+  await page.reload()
+  await expect(page.getByRole('button', { name: '简体' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '繁體' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-Hant')
+  await expect(page.getByRole('heading', { name: '完成高中十二年級' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Blotz 任務應用程式' })).toBeVisible()
+})
+
+test('life story contains the confirmed milestones and accessible photo placeholders', async ({ page }) => {
+  await page.goto('/')
+
+  await expect(page.locator('.tl-year:visible').filter({ hasText: /^June 2019$/ })).toBeVisible()
+  await expect(page.locator('.tl-year:visible').filter({ hasText: /^2019 — July 2023$/ })).toBeVisible()
+  await expect(page.locator('.tl-year:visible').filter({ hasText: /^February 2024$/ })).toBeVisible()
+  await expect(page.locator('.tl-detail:visible').filter({ hasText: 'December 2025' })).toBeVisible()
+  await expect(page.locator('.tl-year:visible').filter({ hasText: /^August 2026$/ })).toBeVisible()
+  await expect(page.getByRole('img', { name: /bicycle placeholder/i })).toBeVisible()
+  await expect(page.getByRole('img', { name: /Taipei skyline placeholder/i })).toBeVisible()
+  await expect(page.getByText(/Evangelical Union/)).toBeVisible()
+})
+
 test('mobile navigation closes with Escape and restores focus', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/')
@@ -33,6 +62,37 @@ test('mobile navigation closes with Escape and restores focus', async ({ page })
   await page.locator('#site-nav a[href="#work"]').click()
   await expect(page).toHaveURL(/#work$/)
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('language selector remains available in the mobile navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/')
+
+  const menuButton = page.locator('button[aria-controls="site-nav"]')
+  await menuButton.click()
+  const languageGroup = page.getByRole('group', { name: 'Language' })
+  await expect(languageGroup).toBeVisible()
+  await languageGroup.getByRole('button', { name: '简体' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-Hans')
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('button', { name: '关闭导航' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '切换到白天模式' })).toBeVisible()
+})
+
+test('theme selector toggles the light palette and remembers the choice', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  await page.getByRole('button', { name: 'Switch to light mode' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(247, 244, 236)')
+  await expect(page.getByRole('button', { name: 'Switch to dark mode' }))
+    .toHaveAttribute('aria-pressed', 'true')
+
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 
 test('profile photo floats over the nav and failed hero images use the dark placeholder', async ({ page }) => {

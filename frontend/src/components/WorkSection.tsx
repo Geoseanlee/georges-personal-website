@@ -1,5 +1,6 @@
 import type { Project } from '../types/project'
 import ProjectCard from './ProjectCard'
+import { useLocale } from '../i18n/useLocale'
 
 interface Props {
   projects: Project[]
@@ -18,18 +19,14 @@ function SkeletonCards() {
 }
 
 export default function WorkSection({ projects, loading, error }: Props) {
+  const { messages } = useLocale()
+
   return (
     <section className="section" id="work" aria-labelledby="work-title">
       <div className="wrap">
         <div className="work-header">
-          <h2 id="work-title">
-            Things I've<br />
-            <em>helped bring to life.</em>
-          </h2>
-          <p>
-            Somewhere between a useful tool and a meaningful experience,
-            there's a good project.
-          </p>
+          <h2 id="work-title">{messages.work.heading}</h2>
+          <p>{messages.work.introduction}</p>
         </div>
 
         <div className="project-grid">
@@ -38,9 +35,9 @@ export default function WorkSection({ projects, loading, error }: Props) {
           {!loading && error && (
             <div className="work-state">
               <p>
-                {error} Check back soon, or{' '}
+                {messages.work.unavailable} {messages.work.checkBack}{' '}
                 <a href="https://github.com/Geoseanlee" target="_blank" rel="noopener noreferrer">
-                  browse GitHub directly
+                  {messages.work.browseGithub}
                 </a>
                 .
               </p>
@@ -58,7 +55,7 @@ export default function WorkSection({ projects, loading, error }: Props) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          More on GitHub <span aria-hidden="true">↗</span>
+          {messages.work.more} <span aria-hidden="true">↗</span>
         </a>
       </div>
     </section>
