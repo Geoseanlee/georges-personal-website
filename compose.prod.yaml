@@ -1,0 +1,22 @@
+services:
+  db:
+    environment:
+      POSTGRES_DB: personalweb
+      POSTGRES_USER: personalweb_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+    secrets:
+      - postgres_admin_password
+
+  api:
+    env_file:
+      - ./backend/.env.compose-api
+    ports:
+      - "127.0.0.1:${PERSONALWEB_API_HOST_PORT:-5050}:8000"
+
+secrets:
+  postgres_admin_password:
+    file: ./backend/.secrets/postgres-admin-password
+
+volumes:
+  postgres-data:
+    name: personalweb-production-postgres-data

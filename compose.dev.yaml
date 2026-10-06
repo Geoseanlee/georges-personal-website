@@ -1,0 +1,21 @@
+services:
+  db:
+    env_file:
+      - .env.compose
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  api:
+    env_file:
+      - .env.compose
+    ports:
+      - "127.0.0.1:5051:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres-data:
+    name: personalweb-development-postgres-data

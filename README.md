@@ -11,7 +11,7 @@ The production site is self-hosted on a Mac mini behind a named Cloudflare Tunne
 - Python 3.11 or newer
 - Homebrew (for local PostgreSQL)
 
-Docker is not required. PostgreSQL runs as a native macOS Homebrew service.
+Docker is optional. The standard local setup uses PostgreSQL as a native macOS Homebrew service; an alternative Docker Compose setup for the API and a separate development database is below.
 
 ## Quick preview: frontend only
 
@@ -81,15 +81,15 @@ Use two terminal windows from the repository root.
 ```bash
 cd backend
 source .venv/bin/activate
-uvicorn app.main:app --reload --host 127.0.0.1 --port 5050
+uvicorn app.main:app --reload --host 127.0.0.1 --port 5052
 ```
 
 API endpoints:
 
-- Health: <http://127.0.0.1:5050/api/v1/health>
-- Projects: <http://127.0.0.1:5050/api/v1/projects>
+- Health: <http://127.0.0.1:5052/api/v1/health>
+- Projects: <http://127.0.0.1:5052/api/v1/projects>
 
-The health endpoint should return `{"status":"ok"}`; the projects endpoint should return four records.
+The health endpoint should return `{"status":"ok"}`; the projects endpoint should return four records. Port `5052` avoids the production Compose API (`5050`) and development Compose API (`5051`).
 
 **Terminal 2 — React:**
 
@@ -100,16 +100,39 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open <http://localhost:5173>. `.env.local` tells React to fetch projects from the local API. Restart Vite after changing frontend environment variables. To preview only the UI, omit `.env.local` or remove `VITE_API_BASE_URL`; the bundled sample data will be used.
+Open <http://localhost:5173>. `.env.local` points React to the local API on port `5052`. Restart Vite after changing frontend environment variables. To preview only the UI, omit `.env.local` or remove `VITE_API_BASE_URL`; the bundled sample data will be used.
 
 ## Later starts
 
 1. Start PostgreSQL if it is not running: `brew services start postgresql@16`.
-2. In terminal 1, run the FastAPI command above.
+2. In terminal 1, run the FastAPI command above (port `5052`).
 3. In terminal 2, run the Vite command above.
 4. Stop each foreground server with `Ctrl+C`. Stop PostgreSQL only if desired: `brew services stop postgresql@16`.
 
 The backend Python environment stays in `backend/.venv`; npm dependencies stay in `frontend/node_modules`.
+
+## Optional: Docker Compose for local API development
+
+The development Compose overlay runs the API and a separate PostgreSQL database. It does not touch the production database or Mac mini services. Docker Desktop must be running. The host ports `5433` and `5051` avoid the native PostgreSQL (`5432`) and API (`5050`) ports.
+
+From the repository root, create a private Compose environment file if one does not already exist. Use a local-only password consistently in the PostgreSQL and database URL values:
+
+```bash
+cp -n .env.compose.example .env.compose
+```
+
+Start the database, apply schema migrations, and seed the development database:
+
+```bash
+docker compose -p personalweb-dev --env-file .env.compose -f compose.yaml -f compose.dev.yaml up -d db
+docker compose -p personalweb-dev --env-file .env.compose -f compose.yaml -f compose.dev.yaml run --rm api alembic upgrade head
+docker compose -p personalweb-dev --env-file .env.compose -f compose.yaml -f compose.dev.yaml exec -T db psql -U personalweb_app -d personalweb < db/seed.sql
+docker compose -p personalweb-dev --env-file .env.compose -f compose.yaml -f compose.dev.yaml up --build -d api
+```
+
+The API is available at <http://127.0.0.1:5051/api/v1/health>. To connect the local Vite frontend, set `VITE_API_BASE_URL=http://127.0.0.1:5051` in `frontend/.env.local` and restart Vite. The API source is mounted for reload-on-change development. This port differs from the native local API (`5052`) and production Compose API (`5050`).
+
+Use the same `-p`, `--env-file`, and `-f` options with `logs -f api db` to inspect logs or `down` to stop the stack. Its named database volume survives `down`; do not add `-v` unless you intend to delete the development database. The development overlay is not the production deployment. Production service management and database backup/restore are documented in [SERVER_DEPLOYMENT.md](SERVER_DEPLOYMENT.md).
 
 ## Tests and production build
 
@@ -138,7 +161,7 @@ python -m pytest
 | `pg_isready` reports no response | Run `brew services start postgresql@16`, then check `brew services list` and port 5432. |
 | `ValidationError: database_url Field required` | Copy `backend/.env.example` to `backend/.env`; run Uvicorn from `backend/`. |
 | API health returns `503` | Confirm PostgreSQL is running and the `personalweb` database exists; verify the URL in the ignored `backend/.env`. |
-| The projects page reports it cannot load data | Confirm API health and `/api/v1/projects` work, and that `frontend/.env.local` points to `http://127.0.0.1:5050`. |
+| The projects page reports it cannot load data | Confirm API health and `/api/v1/projects` work, and that `frontend/.env.local` points to the selected local API (`http://127.0.0.1:5052` for native Uvicorn or `http://127.0.0.1:5051` for Compose development). |
 | Browser console reports CORS | Set `ALLOWED_ORIGINS=http://localhost:5173` in `backend/.env` and restart Uvicorn. |
 | Alembic cannot find the driver | Activate `backend/.venv` and install `requirements.txt` plus `requirements-dev.txt`. |
 

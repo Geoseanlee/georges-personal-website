@@ -90,7 +90,7 @@ fi
 FRONTEND_CHANGED=0
 BACKEND_CHANGED=0
 if grep -q '^frontend/' <<< "$CHANGED_FILES"; then FRONTEND_CHANGED=1; fi
-if grep -q '^backend/' <<< "$CHANGED_FILES"; then BACKEND_CHANGED=1; fi
+if grep -Eq '^(backend/|compose\.yaml$|compose\.prod\.yaml$)' <<< "$CHANGED_FILES"; then BACKEND_CHANGED=1; fi
 
 if (( FRONTEND_CHANGED )); then
   if grep -q '^frontend/package-lock\.json$' <<< "$CHANGED_FILES"; then
@@ -103,19 +103,34 @@ if (( FRONTEND_CHANGED )); then
 fi
 
 if (( BACKEND_CHANGED )); then
+  if [[ ! -f "$REPO_ROOT/backend/.env.compose-api" || ! -f "$REPO_ROOT/backend/.secrets/postgres-admin-password" ]]; then
+    log "Production Compose environment or database secret is missing; refusing to deploy the API."
+    exit 1
+  fi
   (
     cd "$REPO_ROOT/backend"
     .venv/bin/python -m pytest
     .venv/bin/python -m compileall -q app tests
   )
-  launchctl kickstart -k "gui/$(id -u)/com.geoseanlee.personalweb-api"
+  docker compose \
+    --project-name personalweb-prod \
+    --env-file backend/.env.compose-api \
+    --file compose.yaml \
+    --file compose.prod.yaml \
+    build api
+  docker compose \
+    --project-name personalweb-prod \
+    --env-file backend/.env.compose-api \
+    --file compose.yaml \
+    --file compose.prod.yaml \
+    up -d api
 
   for attempt in {1..20}; do
     if curl --silent --show-error --fail http://127.0.0.1:5050/api/v1/health >/dev/null; then
       break
     fi
     if (( attempt == 20 )); then
-      log "API health check failed after restart; deployment state was not advanced."
+      log "API health check failed after Compose deployment; deployment state was not advanced."
       exit 1
     fi
     sleep 2

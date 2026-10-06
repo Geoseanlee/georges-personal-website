@@ -17,10 +17,12 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.compose
 !.env.example
 backend/.env
 backend/.env.*
 !backend/.env.example
+backend/.secrets/
 
 # Node / frontend
 node_modules/
