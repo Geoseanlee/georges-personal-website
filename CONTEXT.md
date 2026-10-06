@@ -4,6 +4,13 @@
 
 ## 修改記錄
 
+### 2026-10-06 — 推送與自動部署恢復
+
+- 已將 Docker Compose 正式遷移及圖示路徑修正推送至 GitHub `main`；部署提交為 `1fbf9a2`，包含先前獨立提交的檢查點 `49e0cbf`。
+- 依部署安全流程執行 `scripts/deploy-macmini.sh --accept-reviewed-changes`，前端 unit/lint/E2E/build 與後端 9 項測試均通過；部署狀態檔已更新至 `1fbf9a2375a7a0753cca73c1f27019e076987bb1`。
+- 再次確認 Compose API/資料庫健康，公開 API 回傳 4 筆作品，網站首頁 HTTP 200；Git 工作樹乾淨並與 `origin/main` 同步。
+- GitHub `main` 自動更新已恢復；後續 migration/依賴清單變更仍遵循人工審閱及確認流程。Docker Desktop 登入啟動設定仍需在桌面設定中確認。
+
 ### 2026-10-06 — Compose 正式服務遷移
 
 - 正式 API 與 PostgreSQL 16 已在目前這台 Mac 由 `personalweb-prod` Compose 專案執行；API 綁定 `127.0.0.1:5050` 供既有 Cloudflare Tunnel 轉送，PostgreSQL 僅在 Compose 內網可用，資料卷為 `personalweb-production-postgres-data`。
@@ -13,7 +20,7 @@
 - API 映像已移除測試依賴；將 `psycopg[binary]` 移至正式依賴，供容器內 Alembic migration 使用。自動部署腳本已改為測試後建置並更新 Compose API。
 - 原生本機 API、開發 Compose API、正式 Compose API 分別使用 `5052`、`5051`、`5050`，避免互相衝突。
 - 將前一個檢查點中不存在的 `/icon.svg` 修正為實際存在的 `/favicon.svg`，避免推送後破圖示。
-- Compose 機密存於被 Git 忽略的 `backend/.env.compose-api` 與 `backend/.secrets/postgres-admin-password`；Docker Desktop「登入時啟動」設定尚未核實。部署程式/文件目前尚未提交或推送，Git 自動同步會在工作樹未乾淨時安全拒絕更新，須審閱、提交並推送後再恢復自動同步。
+- Compose 機密存於被 Git 忽略的 `backend/.env.compose-api` 與 `backend/.secrets/postgres-admin-password`；Docker Desktop「登入時啟動」設定尚未核實。遷移時工作樹未提交曾使 Git 同步器安全拒絕更新，後續已推送並恢復，詳見上一筆記錄。
 
 ### 2026-10-06
 

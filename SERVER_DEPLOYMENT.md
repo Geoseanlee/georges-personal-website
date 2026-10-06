@@ -91,8 +91,16 @@ docker compose -p personalweb-prod --env-file backend/.env.compose-api -f compos
 - **前端：**Cloudflare Pages 与 GitHub 仓库连接完成后，每次 push 到 `main` 都会自动构建并发布；Pages Build history 可查看结果。目前还需要完成本节开头的 Dashboard 授权、Pages 项目与域名切换。
 - **Mac mini：**启用 `com.geoseanlee.personalweb-git-sync` 后，LaunchAgent 每 5 分钟执行 `scripts/deploy-macmini.sh` 检查 `origin/main`。有新提交时检查工作区、快进同步，再按改动运行前端检查/构建，或运行后端测试、构建生产 API 镜像、更新 Compose API 并检查健康端点。
 - 自动更新只接受 `main` 快进提交；遇到本机未提交改动、分支分叉、数据库 migration 或后端依赖清单变化时会停止并写日志，等待人工处理。**数据库 migration 不会自动执行。**
-- 本次 Compose 部署的代码与脚本目前仍在本机未提交工作树；安全脚本会因此拒绝自动同步。审阅后需提交并推送，再依下方 migration/依赖确认步骤处理 `requirements.txt` 变化；在此之前可手动运行已验证的 Compose API，但自动更新尚未恢复。
-- 处理 migration/依赖变更时，先审查提交、备份数据库，再手动快进同步、安装后端依赖并运行 `cd backend && .venv/bin/alembic upgrade head`。确认完成后，在仓库根目录运行 `scripts/deploy-macmini.sh --accept-reviewed-changes`；它会再次测试、构建/重启相应服务并健康检查，成功后才更新部署状态。
+- 本次 Compose 部署已提交并推送至 `main`；已运行 `scripts/deploy-macmini.sh --accept-reviewed-changes`，依赖变更获人工确认，部署状态已同步。后续推送会由同步 LaunchAgent 按规则检查并部署。
+- 处理 migration/依赖变更时，先审查提交并备份数据库，再手动快进同步；若依赖清单变更，先安装后端 `.venv` 依赖，再按新源码构建 API 镜像并执行 Compose migration。完成后在仓库根目录运行 `scripts/deploy-macmini.sh --accept-reviewed-changes`；它会重新测试、构建/更新服务并健康检查，成功后才更新部署状态：
+
+```bash
+git pull --ff-only origin main
+backend/.venv/bin/python -m pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+docker compose -p personalweb-prod --env-file backend/.env.compose-api -f compose.yaml -f compose.prod.yaml build api
+docker compose -p personalweb-prod --env-file backend/.env.compose-api -f compose.yaml -f compose.prod.yaml run --rm api alembic upgrade head
+scripts/deploy-macmini.sh --accept-reviewed-changes
+```
 - 自动同步启动后，Mac mini 通常在 push 后 5 分钟内更新；Cloudflare Pages 在 GitHub push 后启动构建，完成时间以 Pages Build history 为准。Mac mini 离线时会在重新登录/联网后继续检查。
 
 检查同步 agent 与日志：
